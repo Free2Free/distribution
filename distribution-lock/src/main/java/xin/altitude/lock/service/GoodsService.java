@@ -1,6 +1,7 @@
 package xin.altitude.lock.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import xin.altitude.lock.entity.Goods;
 import xin.altitude.lock.mappeer.GoodsMapper;
