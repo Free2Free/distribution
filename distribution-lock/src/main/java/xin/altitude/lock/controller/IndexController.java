@@ -34,4 +34,11 @@ public class IndexController {
         System.out.printf("AA:", "开始了");
         return service.genOrderWithZk(id, num);
     }
+
+    @PostMapping("/orderRedis")
+    public Boolean indexWithRedis(@RequestParam(value = "id", defaultValue = "2") Long id,
+                               @RequestParam(value = "num", defaultValue = "1", required = false) int num) {
+        System.out.printf("AA:", "开始了");
+        return service.genOrderWithRedis(id, num);
+    }
 }

@@ -4,6 +4,8 @@ import lombok.SneakyThrows;
 import lombok.Synchronized;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +27,10 @@ public class OrderService {
 
     @Autowired
     private CuratorFramework curatorFramework;
+
+    @Autowired
+    private RedissonClient redissonClient;
+
 
     /**
      * 生成订单
@@ -76,6 +82,30 @@ public class OrderService {
         }
         //释放锁
         lock.release();
+        return false;
+    }
+
+    @Transactional
+    public Boolean genOrderWithRedis(Long goodsId,int num){
+        String key = "dec_store_lock_" + goodsId;
+        RLock lock = redissonClient.getLock(key);
+        //加锁（分布式）
+        lock.lock();
+        Goods goods = goodsMapper.selectById(goodsId);
+        if (goods.getStock()>=num) {
+            goods.setStock(goods.getStock()-num);
+            //减库存(基于乐观锁实现减库存)
+            boolean bl = goodsMapper.updateById(goods) > 0;
+            if (bl) {
+                Order order = new Order(goodsId, num);
+                orderMapper.insert(order);
+                //释放锁
+                lock.unlock();
+                return true;
+            }
+        }
+        //释放锁
+        lock.unlock();
         return false;
     }
 }

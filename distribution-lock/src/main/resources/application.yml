@@ -19,5 +19,9 @@ mybatis-plus:
   #  显示SQL日志
   configuration:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
 server:
   port: 8082
+
+redisson:
+  address: redis://localhost:6379
