@@ -26,4 +26,12 @@ public class IndexController {
                          @RequestParam(value = "num", defaultValue = "1", required = false) int num) {
         return service.genOrder(id, num);
     }
+
+
+    @PostMapping("/orderZk")
+    public Boolean indexWithZk(@RequestParam(value = "id", defaultValue = "2") Long id,
+                         @RequestParam(value = "num", defaultValue = "1", required = false) int num) {
+        System.out.printf("AA:", "开始了");
+        return service.genOrderWithZk(id, num);
+    }
 }

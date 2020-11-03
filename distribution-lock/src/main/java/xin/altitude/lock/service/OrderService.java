@@ -1,6 +1,9 @@
 package xin.altitude.lock.service;
 
+import lombok.SneakyThrows;
 import lombok.Synchronized;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +22,9 @@ public class OrderService {
     private GoodsMapper goodsMapper;
     @Autowired
     private OrderMapper orderMapper;
+
+    @Autowired
+    private CuratorFramework curatorFramework;
 
     /**
      * 生成订单
@@ -40,6 +46,36 @@ public class OrderService {
             }
             return false;
         }
+        return false;
+    }
+
+
+    /**
+     * 使用zk分布式锁，解决并发问题，将压力挡在数据库访问之前
+     * @param goodsId
+     * @param num
+     * @return
+     */
+    @SneakyThrows
+    @Transactional
+    public Boolean genOrderWithZk(Long goodsId,int num){
+        InterProcessMutex lock = new InterProcessMutex(curatorFramework,"/lock");
+        //加锁（分布式）
+        lock.acquire();
+        Goods goods = goodsMapper.selectById(goodsId);
+        if (goods.getStock()>=num) {
+            goods.setStock(goods.getStock()-num);
+            //减库存(基于乐观锁实现减库存)
+            boolean bl = goodsMapper.updateById(goods) > 0;
+            if (bl) {
+                Order order = new Order(goodsId, num);
+                orderMapper.insert(order);
+                lock.release();
+                return true;
+            }
+        }
+        //释放锁
+        lock.release();
         return false;
     }
 }
